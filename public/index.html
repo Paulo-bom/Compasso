@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compasso — Sistema de Agendamento</title>
+<meta name="description" content="Sistema de agendamento para clínicas e salões: cadastro de clientes e serviços, agenda diária, horários de funcionamento, cancelamento e histórico.">
+<meta name="theme-color" content="#3E6D5D">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FBF8F1' stroke='%233D6B5C' stroke-width='1.4'/%3E%3Cpath d='M12 4 L14.2 11 L12 20 L9.8 11 Z' fill='%233D6B5C'/%3E%3Cpath d='M4 12 L11 9.8 L20 12 L11 14.2 Z' fill='%23B8875A' opacity='0.85'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFF3EE;
+    --paper:#FBF8F1;
+    --surface:#FFFFFF;
+    --surface-alt:#E8F0E7;
+    --ink:#182420;
+    --ink-soft:#55665D;
+    --ink-faint:#98A599;
+    --accent:#3E6D5D;
+    --accent-dark:#25443A;
+    --accent-bg:#DEEBE4;
+    --accent-100:#C6DFD3;
+    --wood:#B8875A;
+    --wood-bg:#F4E8D6;
+    --rule-red:#B96659;
+    --danger:#A54B3E;
+    --danger-bg:#F4E1DC;
+    --border:#DCE3D9;
+    --shadow-1:0 1px 2px rgba(24,36,32,0.05), 0 6px 16px -8px rgba(24,36,32,0.10);
+    --shadow-2:0 2px 4px rgba(24,36,32,0.06), 0 14px 30px -12px rgba(24,36,32,0.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 600px at 12% -8%, rgba(62,109,93,0.06), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(184,135,90,0.07), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', serif; letter-spacing:-0.01em;}
+  ::selection{background:var(--accent-100);}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:232px;
+    min-width:232px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    padding:30px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:30px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    box-shadow:1px 0 0 rgba(24,36,32,0.02);
+  }
+  .brand{display:flex;align-items:center;gap:11px;padding:0 2px;}
+  .brand-mark{width:27px;height:27px;flex:none;transition:transform .4s cubic-bezier(.2,.8,.2,1);}
+  .brand:hover .brand-mark{transform:rotate(50deg);}
+  .brand-name{font-size:20.5px;font-weight:600;letter-spacing:-0.01em;}
+  .nav{display:flex;flex-direction:column;gap:3px;}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 12px;border-radius:9px;
+    color:var(--ink-soft);cursor:pointer;
+    font-size:14.5px;font-weight:500;
+    border:1px solid transparent;
+    transition:background .15s ease, color .15s ease, padding-left .15s ease;
+  }
+  .nav-item:hover{background:var(--surface-alt);color:var(--ink);padding-left:15px;}
+  .nav-item.active{background:var(--accent-bg);color:var(--accent-dark);}
+  .nav-item svg{width:18px;height:18px;flex:none;}
+  .sidebar-foot{margin-top:auto;padding:14px 2px 0;border-top:1px dashed var(--border);position:relative;}
+  .clock-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-faint);line-height:1.65;}
+  .sidebar-holes{position:absolute;left:-20px;top:0;bottom:0;width:20px;display:none;}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;padding:36px 46px 60px;max-width:1100px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px;flex-wrap:wrap;}
+  .page-title{font-size:29px;font-weight:600;margin:0;}
+  .page-sub{color:var(--ink-soft);font-size:13.5px;margin-top:5px;}
+
+  button{font-family:inherit;}
+  .btn{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink);
+    padding:10px 18px;
+    border-radius:24px;
+    font-size:13.5px;font-weight:500;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+    transition:transform .12s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{background:var(--surface-alt);}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:var(--shadow-1);}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .btn-danger:hover{background:var(--danger-bg);}
+  .btn-ghost{border-color:transparent;background:transparent;padding:8px 11px;border-radius:9px;}
+  .btn-ghost:hover{background:var(--surface-alt);}
+  .btn-sm{padding:6px 12px;font-size:12.5px;}
+
+  input,select,textarea{
+    font-family:inherit;font-size:13.5px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 12px;
+    background:#fff;color:var(--ink);
+    width:100%;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg);}
+  label{font-size:12.5px;color:var(--ink-soft);font-weight:500;display:block;margin-bottom:6px;}
+  .field{margin-bottom:15px;}
+  .field-row{display:flex;gap:12px;}
+  .field-row .field{flex:1;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow-1);}
+
+  /* ---------- Agenda / ledger ---------- */
+  .date-nav{display:flex;align-items:center;gap:10px;}
+  .date-display{min-width:240px;}
+  .date-display .day-name{font-size:21px;font-weight:600;}
+  .date-display .day-num{color:var(--ink-soft);font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+  #datePick{border-radius:24px;}
+
+  .ledger-wrap{
+    background:var(--paper);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow-1);
+    padding:6px 22px 6px 0;
+    position:relative;
+    overflow:hidden;
+  }
+  .ledger-wrap::before{
+    content:'';position:absolute;left:96px;top:0;bottom:0;width:1px;background:var(--rule-red);opacity:0.35;
+  }
+  .ledger{ position:relative; }
+  .slot{
+    display:flex;align-items:stretch;gap:0;
+    position:relative;
+    min-height:58px;
+    border-bottom:1px solid rgba(220,227,217,0.7);
+  }
+  .slot:last-child{border-bottom:none;}
+  .slot-time{
+    width:96px;flex:none;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--ink-faint);
+    padding:15px 20px 15px 18px;
+    position:relative;
+    text-align:right;
+  }
+  .slot-time::after{
+    content:'';position:absolute;right:-3.5px;top:20px;width:6px;height:6px;
+    border-radius:50%;background:var(--rule-red);opacity:0.45;
+  }
+  .slot-body{flex:1;padding:9px 4px 9px 22px;display:flex;align-items:center;}
+  .slot-empty{
+    color:var(--ink-faint);font-size:13px;font-style:italic;
+    width:100%;padding:9px 13px;border-radius:9px;cursor:pointer;
+    border:1px dashed transparent;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .slot-empty:hover{background:var(--surface-alt);border-color:var(--accent-100);color:var(--accent-dark);}
+  .appt-card{
+    width:100%;background:var(--accent-bg);border-radius:10px;
+    padding:11px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border-left:3px solid var(--accent);
+    box-shadow:0 1px 2px rgba(24,36,32,0.04);
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .appt-card:hover{box-shadow:var(--shadow-1);transform:translateY(-1px);}
+  .appt-card.cancelado{background:var(--danger-bg);border-left-color:var(--danger);opacity:.8;}
+  .appt-card.concluido{background:var(--surface-alt);border-left-color:var(--ink-faint);}
+  .appt-main{min-width:0;}
+  .appt-client{font-weight:600;font-size:14px;color:var(--accent-dark);}
+  .appt-card.cancelado .appt-client{color:var(--danger);}
+  .appt-card.concluido .appt-client{color:var(--ink-soft);}
+  .appt-service{font-size:12.5px;color:var(--ink-soft);}
+  .badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+  .badge-agendado{background:var(--accent-bg);color:var(--accent-dark);border:1px solid var(--accent-100);}
+  .badge-cancelado{background:var(--danger-bg);color:var(--danger);border:1px solid #E3BFB8;}
+  .badge-concluido{background:var(--surface-alt);color:var(--ink-soft);border:1px solid var(--border);}
+  .closed-msg{color:var(--ink-faint);font-size:14px;padding:36px 0;text-align:center;font-style:italic;}
+
+  .db-banner{
+    font-size:12.5px;padding:10px 16px;border-radius:9px;margin-bottom:20px;
+    line-height:1.5;
+  }
+  .db-banner.warn{background:var(--wood-bg);color:#7A5326;border:1px solid #E4CBA3;}
+  .db-banner.error{background:var(--danger-bg);color:var(--danger);border:1px solid #E3BFB8;}
+
+  /* ---------- Sub tabs (Cadastro) ---------- */
+  .subtabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .subtab{
+    padding:9px 2px;margin-right:22px;font-size:14px;font-weight:500;color:var(--ink-faint);
+    cursor:pointer;border-bottom:2px solid transparent;transition:color .15s ease;
+  }
+  .subtab:hover{color:var(--ink-soft);}
+  .subtab.active{color:var(--ink);border-bottom-color:var(--accent);}
+
+  .list-row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 4px;border-bottom:1px solid var(--border);
+    transition:background .15s ease;
+  }
+  .list-row:hover{background:rgba(232,240,231,0.4);}
+  .list-row:last-child{border-bottom:none;}
+  .row-title{font-weight:500;font-size:14px;}
+  .row-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .row-actions{display:flex;gap:6px;flex:none;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media (max-width:760px){.grid-2{grid-template-columns:1fr;}}
+
+  /* ---------- Horarios table ---------- */
+  .hours-row{
+    display:grid;grid-template-columns:130px 90px 1fr 1fr 110px;gap:12px;align-items:center;
+    padding:12px 4px;border-bottom:1px solid var(--border);
+  }
+  .hours-row:last-child{border-bottom:none;}
+  .hours-day{font-weight:500;font-size:14px;}
+  .toggle{
+    position:relative;width:38px;height:22px;border-radius:20px;background:var(--border);
+    cursor:pointer;flex:none;border:none;transition:background .15s ease;
+  }
+  .toggle.on{background:var(--accent);}
+  .toggle::after{
+    content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:left .15s ease;box-shadow:0 1px 2px rgba(0,0,0,0.15);
+  }
+  .toggle.on::after{left:18px;}
+  .hours-closed-label{color:var(--ink-faint);font-size:12.5px;font-style:italic;}
+
+  /* ---------- Historico ---------- */
+  .filters-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .filters-bar input,.filters-bar select{width:auto;min-width:170px;border-radius:24px;}
+  .hist-row{display:grid;grid-template-columns:104px 1fr 140px 90px;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--border);transition:background .15s ease;}
+  .hist-row:hover{background:rgba(232,240,231,0.4);}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-date{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .empty-state{text-align:center;padding:54px 10px;color:var(--ink-faint);font-size:13.5px;}
+  .empty-state svg{width:32px;height:32px;margin-bottom:12px;opacity:.5;}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(22,35,31,0.4);backdrop-filter:blur(1.5px);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:60px 20px;overflow-y:auto;z-index:50;
+  }
+  .overlay.show{display:flex;animation:overlayIn .18s ease;}
+  @keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
+  .modal{
+    background:var(--surface);border-radius:16px;width:100%;max-width:440px;
+    padding:28px 28px 24px;border:1px solid var(--border);box-shadow:var(--shadow-2);
+  }
+  .modal h3{margin:0 0 4px;font-size:20px;}
+  .modal-sub{color:var(--ink-soft);font-size:13px;margin-bottom:20px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;}
+  .inline-add{font-size:12.5px;color:var(--accent-dark);cursor:pointer;font-weight:500;margin-top:7px;display:inline-block;}
+  .inline-add:hover{text-decoration:underline;}
+  .slot-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-height:170px;overflow-y:auto;padding:2px;}
+  .slot-pick{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 4px;text-align:center;
+    border:1px solid var(--border);border-radius:8px;cursor:pointer;background:#fff;
+    transition:border-color .12s ease, background .12s ease, transform .1s ease;
+  }
+  .slot-pick:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .slot-pick.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .slot-pick.unavailable{color:var(--ink-faint);text-decoration:line-through;cursor:not-allowed;background:var(--bg);transform:none;}
+  .no-slots{color:var(--ink-faint);font-size:13px;font-style:italic;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;
+    opacity:0;transition:all .25s ease;pointer-events:none;z-index:100;box-shadow:var(--shadow-2);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="#3D6B5C" stroke-width="1.4"/>
+      <path d="M12 4 L14.2 11 L12 20 L9.8 11 Z" fill="#3D6B5C"/>
+      <path d="M4 12 L11 9.8 L20 12 L11 14.2 Z" fill="#B8875A" opacity="0.85"/>
+    </svg>
+    <span class="brand-name">Compasso</span>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" data-view="agenda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      Agenda
+    </div>
+    <div class="nav-item" data-view="cadastro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 8h5M16 12h5"/></svg>
+      Cadastro
+    </div>
+    <div class="nav-item" data-view="horarios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      Horários
+    </div>
+    <div class="nav-item" data-view="historico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 5v4h4M12 8v4l3 2"/></svg>
+      Histórico
+    </div>
+  </div>
+  <div class="sidebar-foot">
+    <div class="clock-date" id="sidebarClock">—</div>
+  </div>
+</div>
+
+<div class="main">
+  <div id="dbBanner" class="db-banner" style="display:none;"></div>
+
+  <!-- AGENDA -->
+  <div class="view active" id="view-agenda">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title serif">Agenda</h1>
+        <div class="page-sub" id="agendaCount">—</div>
+      </div>
+      <button class="btn btn-primary" id="btnNewAppt">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Novo agendamento
+      </button>
+    </div>
+
+    <div class="date-nav" style="margin-bottom:20px;">
+      <button class="btn btn-ghost" id="prevDay">‹</button>
+      <div class="date-display">
+        <div class="day-name serif" id="dayName">—</div>
+        <div class="day-num" id="dayNum">—</div>
+      </div>
+      <button class="btn btn-ghost" id="nextDay">›</button>
+      <button class="btn btn-sm" id="btnToday" style="margin-left:6px;">Hoje</button>
+      <input type="date" id="datePick" style="width:auto;margin-left:auto;">
+    </div>
+
+    <div class="ledger-wrap">
+      <div id="ledger" class="ledger"></div>
+    </div>
+  </div>
+
+  <!-- CADASTRO -->
+  <div class="view" id="view-cadastro">
+    <div class="page-head">
+      <div><h1 class="page-title serif">Cadastro</h1><div class="page-sub">Clientes e serviços oferecidos</div></div>
+    </div>
+    <div class="subtabs">
+      <div class="subtab active" data-sub="clientes">Clientes</div>
+      <div class="subtab" data-sub="servicos">Serviços</div>
+    </div>
+
+    <div id="sub-clientes">
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin-top:0;font-size:15px;">Novo cliente</h3>
+          <div class="field"><label>Nome</label><input id="clNome" placeholder="Nome completo"></div>
+          <div class="field-row">
+            <div class="field"><label>Telefone</label><input id="clTelefone" placeholder="(11) 90000-0000"></div>
+            <div class="field"><label>E-mail</label><input id="clEmail" placeholder="nome@email.com"></div>
+          </div>
+          <div class="field"><label>Observações</label><textarea id="clObs" rows="2" placeholder="Preferências, alergias, etc."></textarea></div>
+          <button class="btn btn-primary" id="btnAddCliente" style="width:100%;justify-content:center;">Cadastrar cliente</button>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;font-size:15px;">Clientes cadastrados</h3>
+          <input id="searchClientes" placeholder="Buscar por nome…" style="margin-bottom:10px;">
+          <div id="listaClientes"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sub-servicos" style="display:none;">
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin-top:0;font-size:15px;">Novo serviço</h3>
+          <div class="field"><label>Nome do serviço</label><input id="svNome" placeholder="Ex: Corte de cabelo"></div>
+          <div class="field-row">
+            <div class="field"><label>Duração (min)</label><input id="svDuracao" type="number" min="5" step="5" value="30"></div>
+            <div class="field"><label>Preço (R$)</label><input id="svPreco" type="number" min="0" step="5" value="50"></div>
+          </div>
+          <button class="btn btn-primary" id="btnAddServico" style="width:100%;justify-content:center;">Cadastrar serviço</button>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;font-size:15px;">Serviços oferecidos</h3>
+          <div id="listaServicos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HORARIOS -->
+  <div class="view" id="view-horarios">
+    <div class="page-head">
+      <div><h1 class="page-title serif">Horários</h1><div class="page-sub">Defina os dias e horários de funcionamento</div></div>
+    </div>
+    <div class="card">
+      <div id="listaHorarios"></div>
+    </div>
+  </div>
+
+  <!-- HISTORICO -->
+  <div class="view" id="view-historico">
+    <div class="page-head">
+      <div><h1 class="page-title serif">Histórico</h1><div class="page-sub">Todos os agendamentos, concluídos e cancelados</div></div>
+    </div>
+    <div class="filters-bar">
+      <input id="histSearch" placeholder="Buscar por cliente ou serviço…">
+      <select id="histStatus">
+        <option value="todos">Todos os status</option>
+        <option value="agendado">Agendado</option>
+        <option value="concluido">Concluído</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+    <div class="card"><div id="listaHistorico"></div></div>
+  </div>
+
+</div>
+
+<!-- MODAL: novo agendamento -->
+<div class="overlay" id="modalAppt">
+  <div class="modal">
+    <h3 class="serif">Novo agendamento</h3>
+    <div class="modal-sub">Escolha o cliente, o serviço e o horário</div>
+    <div class="field">
+      <label>Cliente</label>
+      <select id="apptCliente"></select>
+      <span class="inline-add" id="showAddClienteInline">+ cadastrar novo cliente</span>
+      <div id="inlineClienteBox" style="display:none;margin-top:8px;">
+        <div class="field-row">
+          <div class="field"><input id="inlineClNome" placeholder="Nome"></div>
+          <div class="field"><input id="inlineClTelefone" placeholder="Telefone"></div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Serviço</label>
+      <select id="apptServico"></select>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="apptData">
+    </div>
+    <div class="field">
+      <label>Horário disponível</label>
+      <div id="apptSlots" class="slot-picker"></div>
+    </div>
+    <div class="field">
+      <label>Observações (opcional)</label>
+      <textarea id="apptObs" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelApptModal">Cancelar</button>
+      <button class="btn btn-primary" id="confirmAppt">Confirmar agendamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: cancelar agendamento -->
+<div class="overlay" id="modalCancel">
+  <div class="modal">
+    <h3 class="serif">Cancelar agendamento</h3>
+    <div class="modal-sub" id="cancelInfo">—</div>
+    <div class="field">
+      <label>Motivo (opcional)</label>
+      <textarea id="cancelMotivo" rows="2" placeholder="Ex: cliente remarcou, imprevisto…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="closeCancelModal">Voltar</button>
+      <button class="btn btn-danger" id="confirmCancel">Confirmar cancelamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/**
+ * Compasso — front-end (agenda, cadastro, horários, histórico)
+ *
+ * Este arquivo é o site inteiro: HTML, CSS e JS num só lugar, sem
+ * build step e sem dependências. Ele guarda todo o estado da
+ * aplicação (clientes, serviços, agendamentos, horários) em um único
+ * objeto `state`, que é sincronizado com a API Node.js (server.js)
+ * através dos endpoints GET/PUT /api/state.
+ *
+ * Estrutura deste script:
+ *   1. Estado inicial e persistência (defaultState, save, load)
+ *   2. Navegação entre as abas (Agenda, Cadastro, Horários, Histórico)
+ *   3. Agenda — renderização da "linha do tempo" do dia e disponibilidade
+ *   4. Modais — novo agendamento e cancelamento
+ *   5. Cadastro — CRUD de clientes e serviços
+ *   6. Horários — configuração de funcionamento por dia da semana
+ *   7. Histórico — listagem e filtros de todos os agendamentos
+ */
+(function(){
+
+  /* Este front-end conversa com uma API Node.js própria (server.js),
+     no mesmo domínio, no endpoint /api/state. Se a API não responder
+     (ex: servidor não está rodando), ele cai para salvar localmente
+     no navegador, como aviso visual (banner amarelo). */
+  var API_BASE = "/api/state";
+
+  var WEEKDAYS = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+  var WEEKDAYS_SHORT = ["dom","seg","ter","qua","qui","sex","sáb"];
+  var STORAGE_KEY = "compasso-data";
+
+  var state = null;
+  var uid = function(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); };
+
+  function defaultState(){
+    return {
+      clients: [
+        {id: uid(), nome:"Ana Souza", telefone:"(11) 98888-1234", email:"ana.souza@email.com", obs:""},
+        {id: uid(), nome:"Carlos Lima", telefone:"(11) 97777-5678", email:"", obs:"Prefere horários pela manhã"}
+      ],
+      services: [
+        {id: uid(), nome:"Corte de cabelo", duracao:30, preco:50},
+        {id: uid(), nome:"Manicure", duracao:45, preco:40},
+        {id: uid(), nome:"Consulta avaliação", duracao:30, preco:80}
+      ],
+      appointments: [],
+      workHours: [
+        {aberto:false, inicio:"09:00", fim:"13:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"18:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"18:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"18:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"18:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"18:00", slot:30},
+        {aberto:true, inicio:"09:00", fim:"13:00", slot:30}
+      ]
+    };
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+
+  function hasLocalStorage(){
+    try{ var k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }
+    catch(e){ return false; }
+  }
+
+  function showDbBanner(status){
+    var el = document.getElementById('dbBanner');
+    if(!el) return;
+    if(status === 'ok'){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    if(status === 'offline'){
+      el.className = 'db-banner warn';
+      el.textContent = '⚠ Não foi possível conectar à API. Os dados estão sendo salvos apenas neste navegador. Verifique se o servidor Node.js (server.js) está rodando.';
+    } else {
+      el.className = 'db-banner error';
+      el.textContent = '⚠ Erro ao comunicar com a API.';
+    }
+  }
+
+  function save(){
+    fetch(API_BASE, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(state)
+    }).then(function(res){
+      if(!res.ok) throw new Error("erro");
+      showDbBanner('ok');
+    }).catch(function(){
+      showDbBanner('offline');
+      fallbackSave();
+    });
+  }
+  function fallbackSave(){
+    if(hasLocalStorage()){
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch(e){ toast("Não foi possível salvar os dados."); }
+    }
+  }
+
+  function load(){
+    fetch(API_BASE).then(function(res){
+      if(!res.ok) throw new Error("erro");
+      return res.json();
+    }).then(function(data){
+      state = data;
+      showDbBanner('ok');
+      render();
+      startAutoRefresh();
+    }).catch(function(){
+      loadFromLocalOrDefault();
+    });
+  }
+  function loadFromLocalOrDefault(){
+    showDbBanner('offline');
+    if(hasLocalStorage()){
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ try{ state = JSON.parse(raw); }catch(e){ state = defaultState(); } }
+      else { state = defaultState(); fallbackSave(); }
+    } else {
+      state = defaultState();
+    }
+    render();
+  }
+
+  var autoRefreshStarted = false;
+  function startAutoRefresh(){
+    if(autoRefreshStarted) return;
+    autoRefreshStarted = true;
+    function pull(){
+      if(document.querySelector('.overlay.show')) return;
+      fetch(API_BASE).then(function(res){
+        if(!res.ok) throw new Error("erro");
+        return res.json();
+      }).then(function(data){
+        var incoming = JSON.stringify(data);
+        if(incoming !== JSON.stringify(state)){
+          state = data;
+          render();
+        }
+        showDbBanner('ok');
+      }).catch(function(){ showDbBanner('offline'); });
+    }
+    setInterval(pull, 12000);
+    window.addEventListener('focus', pull);
+  }
+
+  /* ---------- helpers ---------- */
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+  function fmtDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function parseDate(s){ var p=s.split("-"); return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); }
+  function toMinutes(hhmm){ var p=hhmm.split(":"); return parseInt(p[0])*60+parseInt(p[1]); }
+  function toHHMM(mins){ var h=Math.floor(mins/60), m=mins%60; return pad(h)+":"+pad(m); }
+  function clientName(id){ var c = state.clients.find(function(x){return x.id===id;}); return c? c.nome : "Cliente removido"; }
+  function serviceById(id){ return state.services.find(function(x){return x.id===id;}); }
+
+  // O status "concluído" não é salvo — é calculado na hora de exibir.
+  // Um agendamento é "concluído" assim que a data+hora+duração dele já
+  // ficou no passado; "cancelado" é o único status realmente salvo,
+  // já que "concluído" pode virar passado a qualquer momento sem que
+  // nada precise ser atualizado no banco de dados.
+  function displayStatus(appt){
+    if(appt.status === 'cancelado') return 'cancelado';
+    var apptDateTime = parseDate(appt.data);
+    var tm = toMinutes(appt.hora);
+    apptDateTime.setMinutes(apptDateTime.getMinutes()+tm+ (appt.duracao||30));
+    if(apptDateTime < new Date()) return 'concluido';
+    return 'agendado';
+  }
+
+  function statusLabel(s){
+    return s==='agendado' ? 'Agendado' : (s==='concluido' ? 'Concluído' : 'Cancelado');
+  }
+
+  var currentDate = new Date();
+
+  /* ---------- Navigation ---------- */
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    el.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+      el.classList.add('active');
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      document.getElementById('view-'+el.dataset.view).classList.add('active');
+      if(el.dataset.view === 'historico') renderHistorico();
+      if(el.dataset.view === 'cadastro'){ renderClientes(); renderServicos(); }
+      if(el.dataset.view === 'horarios') renderHorarios();
+    });
+  });
+
+  document.querySelectorAll('.subtab').forEach(function(el){
+    el.addEventListener('click', function(){
+      document.querySelectorAll('.subtab').forEach(function(n){n.classList.remove('active');});
+      el.classList.add('active');
+      document.getElementById('sub-clientes').style.display = el.dataset.sub==='clientes' ? '' : 'none';
+      document.getElementById('sub-servicos').style.display = el.dataset.sub==='servicos' ? '' : 'none';
+    });
+  });
+
+  /* ---------- Clock ---------- */
+  function tickClock(){
+    var d = new Date();
+    var dias = WEEKDAYS[d.getDay()];
+    document.getElementById('sidebarClock').innerHTML =
+      dias.charAt(0).toUpperCase()+dias.slice(1) + "<br>" + pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear() +
+      "<br>" + pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  setInterval(tickClock, 1000*15);
+
+  /* ---------- Agenda / Ledger ---------- */
+  function renderAgenda(){
+    document.getElementById('datePick').value = fmtDate(currentDate);
+    var wd = currentDate.getDay();
+    var dayNameEl = document.getElementById('dayName');
+    var dayNumEl = document.getElementById('dayNum');
+    dayNameEl.textContent = WEEKDAYS[wd];
+    dayNumEl.textContent = pad(currentDate.getDate())+" de "+["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][currentDate.getMonth()]+" de "+currentDate.getFullYear();
+
+    var hours = state.workHours[wd];
+    var ledger = document.getElementById('ledger');
+    ledger.innerHTML = "";
+
+    var dateStr = fmtDate(currentDate);
+    var dayAppts = state.appointments.filter(function(a){ return a.data === dateStr && a.status !== 'cancelado'; });
+    var activeCount = dayAppts.length;
+    document.getElementById('agendaCount').textContent = activeCount + (activeCount===1 ? " agendamento neste dia" : " agendamentos neste dia");
+
+    if(!hours.aberto){
+      ledger.innerHTML = '<div class="closed-msg">Fechado neste dia. Ajuste em Horários se necessário.</div>';
+      return;
+    }
+
+    var startMin = toMinutes(hours.inicio);
+    var endMin = toMinutes(hours.fim);
+    var step = hours.slot;
+
+    var apptsByTime = {};
+    state.appointments.filter(function(a){ return a.data === dateStr; }).forEach(function(a){
+      apptsByTime[a.hora] = a;
+    });
+
+    for(var t=startMin; t<endMin; t+=step){
+      var hhmm = toHHMM(t);
+      var slotDiv = document.createElement('div');
+      slotDiv.className = 'slot';
+      var timeDiv = document.createElement('div');
+      timeDiv.className = 'slot-time';
+      timeDiv.textContent = hhmm;
+      slotDiv.appendChild(timeDiv);
+
+      var bodyDiv = document.createElement('div');
+      bodyDiv.className = 'slot-body';
+
+      var appt = apptsByTime[hhmm];
+      if(appt){
+        var st = displayStatus(appt);
+        var svc = serviceById(appt.servicoId);
+        var card = document.createElement('div');
+        card.className = 'appt-card ' + st;
+        card.innerHTML =
+          '<div class="appt-main">' +
+            '<div class="appt-client">'+clientName(appt.clienteId)+'</div>' +
+            '<div class="appt-service">'+(svc?svc.nome:appt.servicoNome||'Serviço removido')+' · '+ (appt.duracao||30) +' min'+ (appt.status==='cancelado' && appt.motivoCancelamento ? ' — '+escapeHtml(appt.motivoCancelamento) : '') +'</div>' +
+          '</div>';
+        var right = document.createElement('div');
+        right.style.display='flex'; right.style.alignItems='center'; right.style.gap='8px'; right.style.flex='none';
+        var badge = document.createElement('span');
+        badge.className = 'badge badge-'+st;
+        badge.textContent = statusLabel(st);
+        right.appendChild(badge);
+        if(st === 'agendado'){
+          var cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn btn-sm btn-danger';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.addEventListener('click', function(apptId){ return function(){ openCancelModal(apptId); }; }(appt.id));
+          right.appendChild(cancelBtn);
+        }
+        card.appendChild(right);
+        bodyDiv.appendChild(card);
+      } else {
+        var empty = document.createElement('div');
+        empty.className = 'slot-empty';
+        empty.textContent = 'Disponível — clique para agendar';
+        empty.addEventListener('click', function(hh){ return function(){ openApptModal(dateStr, hh); }; }(hhmm));
+        bodyDiv.appendChild(empty);
+      }
+      slotDiv.appendChild(bodyDiv);
+      ledger.appendChild(slotDiv);
+    }
+  }
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  document.getElementById('prevDay').addEventListener('click', function(){
+    currentDate.setDate(currentDate.getDate()-1); renderAgenda();
+  });
+  document.getElementById('nextDay').addEventListener('click', function(){
+    currentDate.setDate(currentDate.getDate()+1); renderAgenda();
+  });
+  document.getElementById('btnToday').addEventListener('click', function(){
+    currentDate = new Date(); renderAgenda();
+  });
+  document.getElementById('datePick').addEventListener('change', function(e){
+    if(e.target.value){ currentDate = parseDate(e.target.value); renderAgenda(); }
+  });
+
+  /* ---------- Modal: novo agendamento ---------- */
+  var apptModal = document.getElementById('modalAppt');
+  var selectedSlot = null;
+
+  function populateApptSelects(){
+    var clSel = document.getElementById('apptCliente');
+    clSel.innerHTML = state.clients.map(function(c){ return '<option value="'+c.id+'">'+escapeHtml(c.nome)+'</option>'; }).join('');
+    var svSel = document.getElementById('apptServico');
+    svSel.innerHTML = state.services.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.nome)+' ('+s.duracao+' min)</option>'; }).join('');
+  }
+
+  function openApptModal(dateStr, preselectTime){
+    populateApptSelects();
+    document.getElementById('apptData').value = dateStr || fmtDate(currentDate);
+    document.getElementById('apptObs').value = "";
+    document.getElementById('inlineClienteBox').style.display = 'none';
+    document.getElementById('inlineClNome').value = "";
+    document.getElementById('inlineClTelefone').value = "";
+    selectedSlot = preselectTime || null;
+    renderApptSlots();
+    apptModal.classList.add('show');
+  }
+
+  document.getElementById('btnNewAppt').addEventListener('click', function(){ openApptModal(fmtDate(currentDate), null); });
+  document.getElementById('cancelApptModal').addEventListener('click', function(){ apptModal.classList.remove('show'); });
+  document.getElementById('showAddClienteInline').addEventListener('click', function(){
+    var box = document.getElementById('inlineClienteBox');
+    box.style.display = box.style.display === 'none' ? '' : 'none';
+  });
+
+  document.getElementById('apptData').addEventListener('change', renderApptSlots);
+  document.getElementById('apptServico').addEventListener('change', renderApptSlots);
+
+  // Gera todos os horários possíveis do dia (respeitando o intervalo
+  // configurado em Horários) e marca como indisponível qualquer
+  // horário cujo intervalo [início, início+duração) colida com um
+  // agendamento já existente naquele dia. A duração usada é a do
+  // serviço selecionado no modal — por isso a lista é recalculada
+  // sempre que a data ou o serviço mudam.
+  function renderApptSlots(){
+    var dateStr = document.getElementById('apptData').value;
+    var svcId = document.getElementById('apptServico').value;
+    var svc = serviceById(svcId);
+    var box = document.getElementById('apptSlots');
+    box.innerHTML = "";
+    if(!dateStr || !svc){ box.innerHTML = '<div class="no-slots">Selecione data e serviço.</div>'; return; }
+    var d = parseDate(dateStr);
+    var wd = d.getDay();
+    var hours = state.workHours[wd];
+    if(!hours.aberto){ box.innerHTML = '<div class="no-slots">Fechado neste dia.</div>'; return; }
+
+    var startMin = toMinutes(hours.inicio);
+    var endMin = toMinutes(hours.fim);
+    var step = hours.slot;
+    var duracao = svc.duracao;
+
+    var existing = state.appointments.filter(function(a){ return a.data===dateStr && a.status !== 'cancelado'; });
+
+    var any = false;
+    for(var t=startMin; t + duracao <= endMin; t += step){
+      var hhmm = toHHMM(t);
+      // Dois intervalos [t, t+duracao) e [aStart, aEnd) se sobrepõem
+      // sempre que um começa antes do outro terminar, nos dois sentidos.
+      var overlaps = existing.some(function(a){
+        var aStart = toMinutes(a.hora);
+        var aEnd = aStart + (a.duracao||30);
+        return t < aEnd && (t+duracao) > aStart;
+      });
+      any = true;
+      var el = document.createElement('div');
+      el.className = 'slot-pick' + (overlaps ? ' unavailable' : '') + (selectedSlot===hhmm && !overlaps ? ' selected' : '');
+      el.textContent = hhmm;
+      if(!overlaps){
+        el.addEventListener('click', function(hh){ return function(){
+          selectedSlot = hh;
+          renderApptSlots();
+        }; }(hhmm));
+      }
+      box.appendChild(el);
+    }
+    if(!any) box.innerHTML = '<div class="no-slots">Nenhum horário disponível neste dia para essa duração.</div>';
+  }
+
+  document.getElementById('confirmAppt').addEventListener('click', function(){
+    var inlineNome = document.getElementById('inlineClNome').value.trim();
+    var clienteId = document.getElementById('apptCliente').value;
+
+    if(inlineNome){
+      var novo = {id: uid(), nome: inlineNome, telefone: document.getElementById('inlineClTelefone').value.trim(), email:"", obs:""};
+      state.clients.push(novo);
+      clienteId = novo.id;
+    }
+
+    var servicoId = document.getElementById('apptServico').value;
+    var svc = serviceById(servicoId);
+    var dateStr = document.getElementById('apptData').value;
+
+    if(!clienteId){ toast("Selecione ou cadastre um cliente."); return; }
+    if(!svc){ toast("Selecione um serviço."); return; }
+    if(!dateStr){ toast("Selecione uma data."); return; }
+    if(!selectedSlot){ toast("Selecione um horário disponível."); return; }
+
+    state.appointments.push({
+      id: uid(),
+      clienteId: clienteId,
+      servicoId: servicoId,
+      servicoNome: svc.nome,
+      data: dateStr,
+      hora: selectedSlot,
+      duracao: svc.duracao,
+      status: 'agendado',
+      obs: document.getElementById('apptObs').value.trim(),
+      criadoEm: new Date().toISOString()
+    });
+    save();
+    apptModal.classList.remove('show');
+    currentDate = parseDate(dateStr);
+    renderAgenda();
+    toast("Agendamento confirmado.");
+  });
+
+  /* ---------- Modal: cancelar ---------- */
+  var cancelModal = document.getElementById('modalCancel');
+  var apptToCancel = null;
+
+  function openCancelModal(apptId){
+    apptToCancel = apptId;
+    var a = state.appointments.find(function(x){return x.id===apptId;});
+    if(!a) return;
+    var svc = serviceById(a.servicoId);
+    document.getElementById('cancelInfo').textContent =
+      clientName(a.clienteId) + ' — ' + (svc?svc.nome:a.servicoNome) + ' em ' + a.data.split('-').reverse().join('/') + ' às ' + a.hora;
+    document.getElementById('cancelMotivo').value = "";
+    cancelModal.classList.add('show');
+  }
+  document.getElementById('closeCancelModal').addEventListener('click', function(){ cancelModal.classList.remove('show'); });
+  document.getElementById('confirmCancel').addEventListener('click', function(){
+    var a = state.appointments.find(function(x){return x.id===apptToCancel;});
+    if(a){
+      a.status = 'cancelado';
+      a.motivoCancelamento = document.getElementById('cancelMotivo').value.trim();
+      a.canceladoEm = new Date().toISOString();
+      save();
+      renderAgenda();
+      toast("Agendamento cancelado.");
+    }
+    cancelModal.classList.remove('show');
+  });
+
+  /* ---------- Cadastro: clientes ---------- */
+  function renderClientes(){
+    var q = (document.getElementById('searchClientes').value||"").toLowerCase();
+    var list = document.getElementById('listaClientes');
+    var items = state.clients.filter(function(c){ return c.nome.toLowerCase().indexOf(q) !== -1; });
+    if(items.length === 0){ list.innerHTML = '<div class="empty-state">Nenhum cliente encontrado.</div>'; return; }
+    list.innerHTML = items.map(function(c){
+      return '<div class="list-row">' +
+        '<div><div class="row-title">'+escapeHtml(c.nome)+'</div><div class="row-sub">'+escapeHtml(c.telefone||'sem telefone')+(c.email?' · '+escapeHtml(c.email):'')+'</div></div>' +
+        '<div class="row-actions"><button class="btn btn-sm btn-danger" data-del-cliente="'+c.id+'">Remover</button></div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('[data-del-cliente]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-del-cliente');
+        state.clients = state.clients.filter(function(c){ return c.id !== id; });
+        save(); renderClientes();
+        toast("Cliente removido.");
+      });
+    });
+  }
+  document.getElementById('searchClientes').addEventListener('input', renderClientes);
+  document.getElementById('btnAddCliente').addEventListener('click', function(){
+    var nome = document.getElementById('clNome').value.trim();
+    if(!nome){ toast("Informe o nome do cliente."); return; }
+    state.clients.push({
+      id: uid(), nome: nome,
+      telefone: document.getElementById('clTelefone').value.trim(),
+      email: document.getElementById('clEmail').value.trim(),
+      obs: document.getElementById('clObs').value.trim()
+    });
+    save();
+    document.getElementById('clNome').value = "";
+    document.getElementById('clTelefone').value = "";
+    document.getElementById('clEmail').value = "";
+    document.getElementById('clObs').value = "";
+    renderClientes();
+    toast("Cliente cadastrado.");
+  });
+
+  /* ---------- Cadastro: serviços ---------- */
+  function renderServicos(){
+    var list = document.getElementById('listaServicos');
+    if(state.services.length === 0){ list.innerHTML = '<div class="empty-state">Nenhum serviço cadastrado.</div>'; return; }
+    list.innerHTML = state.services.map(function(s){
+      return '<div class="list-row">' +
+        '<div><div class="row-title">'+escapeHtml(s.nome)+'</div><div class="row-sub">'+s.duracao+' min · R$ '+Number(s.preco).toFixed(2)+'</div></div>' +
+        '<div class="row-actions"><button class="btn btn-sm btn-danger" data-del-servico="'+s.id+'">Remover</button></div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('[data-del-servico]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-del-servico');
+        state.services = state.services.filter(function(s){ return s.id !== id; });
+        save(); renderServicos();
+        toast("Serviço removido.");
+      });
+    });
+  }
+  document.getElementById('btnAddServico').addEventListener('click', function(){
+    var nome = document.getElementById('svNome').value.trim();
+    var duracao = parseInt(document.getElementById('svDuracao').value) || 30;
+    var preco = parseFloat(document.getElementById('svPreco').value) || 0;
+    if(!nome){ toast("Informe o nome do serviço."); return; }
+    state.services.push({id: uid(), nome: nome, duracao: duracao, preco: preco});
+    save();
+    document.getElementById('svNome').value = "";
+    document.getElementById('svDuracao').value = 30;
+    document.getElementById('svPreco').value = 50;
+    renderServicos();
+    toast("Serviço cadastrado.");
+  });
+
+  /* ---------- Horários ---------- */
+  function renderHorarios(){
+    var list = document.getElementById('listaHorarios');
+    list.innerHTML = state.workHours.map(function(h, idx){
+      return '<div class="hours-row">' +
+        '<div class="hours-day">'+WEEKDAYS[idx]+'</div>' +
+        '<button class="toggle'+(h.aberto?' on':'')+'" data-toggle-day="'+idx+'"></button>' +
+        (h.aberto ?
+          '<input type="time" value="'+h.inicio+'" data-field="inicio" data-day="'+idx+'">' +
+          '<input type="time" value="'+h.fim+'" data-field="fim" data-day="'+idx+'">' +
+          '<select data-field="slot" data-day="'+idx+'">' +
+            [15,20,30,45,60].map(function(v){ return '<option value="'+v+'"'+(h.slot===v?' selected':'')+'>'+v+' min</option>'; }).join('') +
+          '</select>'
+        : '<div class="hours-closed-label">Fechado</div><div></div><div></div>')
+      + '</div>';
+    }).join('');
+
+    list.querySelectorAll('[data-toggle-day]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(btn.getAttribute('data-toggle-day'));
+        state.workHours[idx].aberto = !state.workHours[idx].aberto;
+        save(); renderHorarios();
+      });
+    });
+    list.querySelectorAll('[data-field]').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var idx = parseInt(inp.getAttribute('data-day'));
+        var field = inp.getAttribute('data-field');
+        state.workHours[idx][field] = field==='slot' ? parseInt(inp.value) : inp.value;
+        save();
+        toast("Horários atualizados.");
+      });
+    });
+  }
+
+  /* ---------- Histórico ---------- */
+  function renderHistorico(){
+    var q = (document.getElementById('histSearch').value||"").toLowerCase();
+    var statusFilter = document.getElementById('histStatus').value;
+    var list = document.getElementById('listaHistorico');
+
+    var items = state.appointments.map(function(a){
+      var st = displayStatus(a);
+      return {a:a, st:st};
+    }).filter(function(x){
+      var svc = serviceById(x.a.servicoId);
+      var nome = clientName(x.a.clienteId).toLowerCase();
+      var svcNome = (svc?svc.nome:x.a.servicoNome||"").toLowerCase();
+      var matchesQ = nome.indexOf(q)!==-1 || svcNome.indexOf(q)!==-1;
+      var matchesStatus = statusFilter==='todos' || x.st===statusFilter;
+      return matchesQ && matchesStatus;
+    }).sort(function(x,y){
+      var da = x.a.data+x.a.hora, db = y.a.data+y.a.hora;
+      return da < db ? 1 : -1;
+    });
+
+    if(items.length===0){ list.innerHTML = '<div class="empty-state">Nenhum registro encontrado.</div>'; return; }
+
+    list.innerHTML = items.map(function(x){
+      var a = x.a, svc = serviceById(a.servicoId);
+      return '<div class="hist-row">' +
+        '<div class="hist-date">'+a.data.split('-').reverse().join('/')+'<br>'+a.hora+'</div>' +
+        '<div><div class="row-title">'+escapeHtml(clientName(a.clienteId))+'</div><div class="row-sub">'+escapeHtml(svc?svc.nome:a.servicoNome||'Serviço removido')+(a.motivoCancelamento?' — '+escapeHtml(a.motivoCancelamento):'')+'</div></div>' +
+        '<div><span class="badge badge-'+x.st+'">'+statusLabel(x.st)+'</span></div>' +
+        '<div style="text-align:right;color:var(--ink-faint);font-size:12.5px;">'+(a.duracao||30)+' min</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('histSearch').addEventListener('input', renderHistorico);
+  document.getElementById('histStatus').addEventListener('change', renderHistorico);
+
+  /* ---------- Init ---------- */
+  function render(){
+    renderAgenda();
+    renderClientes();
+    renderServicos();
+    renderHorarios();
+    renderHistorico();
+    tickClock();
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
